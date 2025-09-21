@@ -54,6 +54,7 @@ func main() {
 
 	router.Use(cors.Default())
 	router.Use(middleware.RateLimitMiddleware(time.Second, 100, "api"))
+	router.Use(middleware.LoggerMiddleware(l))
 
 	timeout := time.Duration(env.ContextTimeout) * time.Second
 
