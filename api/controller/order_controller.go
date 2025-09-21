@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dyaksa/warehouse/domain"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/paginator"
 	"github.com/dyaksa/warehouse/pkg/response/response_error"
 	"github.com/dyaksa/warehouse/pkg/response/response_success"
@@ -40,13 +41,13 @@ func (oc *OrderController) ConfirmPayment(c *gin.Context) {
 	orderIDParam := c.Param("orderID")
 	orderID, err := uuid.Parse(orderIDParam)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid order ID format").Status("validation failed").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid order ID format", errx.Op("OrderController.ConfirmPayment"), err))
 		return
 	}
 
 	err = oc.OrderUsecase.ConfirmPayment(c.Request.Context(), orderID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("payment confirmation failed").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeInternal, "failed to confirm payment", errx.Op("OrderController.ConfirmPayment"), err))
 		return
 	}
 
@@ -58,13 +59,13 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 	orderIDParam := c.Param("orderID")
 	orderID, err := uuid.Parse(orderIDParam)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid order ID format").Status("validation failed").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid order ID format", errx.Op("OrderController.CancelOrder"), err))
 		return
 	}
 
 	err = oc.OrderUsecase.CancelOrder(c.Request.Context(), orderID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("order cancellation failed").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeInternal, "failed to cancel order", errx.Op("OrderController.CancelOrder"), err))
 		return
 	}
 
@@ -76,13 +77,13 @@ func (oc *OrderController) GetOrderDetails(c *gin.Context) {
 	orderIDParam := c.Param("orderID")
 	orderID, err := uuid.Parse(orderIDParam)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid order ID format").Status("validation failed").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid order ID format", errx.Op("OrderController.GetOrderDetails"), err))
 		return
 	}
 
 	order, err := oc.OrderUsecase.GetOrderDetails(c.Request.Context(), orderID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("order not found").Send(http.StatusNotFound)
+		c.Error(errx.E(errx.CodeNotFound, "order not found", errx.Op("OrderController.GetOrderDetails"), err))
 		return
 	}
 
@@ -95,21 +96,21 @@ func (oc *OrderController) GetUserOrders(c *gin.Context) {
 	userIDStr := c.GetString("x-user-id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid user ID").Status("authentication error").Send(http.StatusUnauthorized)
+		c.Error(errx.E(errx.CodeValidation, "invalid user ID", errx.Op("OrderController.GetUserOrders"), err))
 		return
 	}
 
 	// Parse pagination parameters
 	var pagination paginator.PaginationRequest
 	if err := c.ShouldBindQuery(&pagination); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("validation failed").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid pagination parameters", errx.Op("OrderController.GetUserOrders"), err))
 		return
 	}
 
 	// Get user orders
 	result, err := oc.OrderUsecase.GetUserOrders(c.Request.Context(), userID, pagination)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("failed to retrieve orders").Send(http.StatusInternalServerError)
+		c.Error(errx.E(errx.CodeInternal, "failed to retrieve orders", errx.Op("OrderController.GetUserOrders"), err))
 		return
 	}
 

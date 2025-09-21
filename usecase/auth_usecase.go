@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/dyaksa/warehouse/bootstrap"
 	"github.com/dyaksa/warehouse/domain"
@@ -32,6 +33,11 @@ func (a *authUsecase) Login(ctx context.Context, payload domain.AuthLoginRequest
 
 	if err != nil {
 		return "", err
+	}
+
+	fmt.Println("existsUser:", existsUser.PasswordHash)
+	if ok := passwordutils.VerifyPassword(payload.Password, existsUser.PasswordHash); !ok {
+		return "", errors.New("invalid credentials")
 	}
 
 	accessToken, err := tokenutils.CreateAccessToken(existsUser, a.env.JwtSecret, a.env.JwtExpiry)
