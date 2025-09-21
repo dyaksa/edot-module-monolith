@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/dyaksa/warehouse/domain"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/paginator"
 	"github.com/google/uuid"
 )
@@ -19,7 +20,7 @@ func (pu *productUsecase) RetrieveAll(ctx context.Context, pagination paginator.
 	return pu.paginator.Paginate(ctx, pagination, func(ctx context.Context, offset, limit int) (items []domain.RetrieveProduct, totalItems int, err error) {
 		items, err = pu.productRepository.RetrieveAll(ctx, limit, offset)
 		if err != nil {
-			return items, totalItems, err
+			return items, totalItems, errx.E(errx.CodeInternal, "failed to retrieve products", errx.Op("productUsecase.RetrieveAll"), err)
 		}
 
 		totalItems = len(items)
@@ -30,7 +31,7 @@ func (pu *productUsecase) RetrieveAll(ctx context.Context, pagination paginator.
 func (pu *productUsecase) Create(ctx context.Context, payload domain.CreateProductRequest) error {
 	warehouseId, err := uuid.Parse(payload.WarehouseID)
 	if err != nil {
-		return err
+		return errx.E(errx.CodeValidation, "invalid warehouse UUID", errx.Op("productUsecase.Create"), err)
 	}
 
 	product := domain.Product{
@@ -40,7 +41,7 @@ func (pu *productUsecase) Create(ctx context.Context, payload domain.CreateProdu
 
 	productId, err := pu.productRepository.Create(ctx, &product)
 	if err != nil {
-		return err
+		return errx.E(errx.CodeInternal, "failed to create product", errx.Op("productUsecase.Create"), err)
 	}
 
 	productStock := domain.ProductStock{
@@ -50,7 +51,7 @@ func (pu *productUsecase) Create(ctx context.Context, payload domain.CreateProdu
 	}
 
 	if _, err = pu.productStockRepository.Create(ctx, &productStock); err != nil {
-		return err
+		return errx.E(errx.CodeInternal, "failed to create product stock", errx.Op("productUsecase.Create"), err)
 	}
 
 	return nil

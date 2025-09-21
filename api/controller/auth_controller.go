@@ -34,7 +34,7 @@ func (ac *AuthController) Register(c *gin.Context) {
 
 	_, err := ac.AuthUsecase.Register(c.Request.Context(), payload)
 	if err != nil {
-		c.Error(errx.E(errx.CodeInternal, "failed to register user", errx.Op("AuthController.Register"), err))
+		c.Error(err)
 		return
 	}
 
@@ -63,8 +63,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	token, err := ac.AuthUsecase.Login(c.Request.Context(), payload)
 	if err != nil {
-		// differentiate invalid identifier vs generic internal
-		c.Error(errx.E(errx.CodeInternal, "failed to login", errx.Op("AuthController.Login"), err))
+		c.Error(err)
 		return
 	}
 

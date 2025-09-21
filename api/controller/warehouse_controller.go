@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dyaksa/warehouse/domain"
-	"github.com/dyaksa/warehouse/pkg/response/response_error"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/response/response_success"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -30,14 +30,12 @@ func (w *WarehouseController) Create(c *gin.Context) {
 	var body domain.WarehouseCreateRequest
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse payload", errx.Op("WarehouseController.Create"), err))
 		return
 	}
 
 	if err := w.WarehouseUsecase.Create(c.Request.Context(), body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -61,15 +59,13 @@ func (w *WarehouseController) Retrieve(c *gin.Context) {
 	warehouseIDStr := c.Param("id")
 	warehouseID, err := uuid.Parse(warehouseIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid warehouse ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse ID", errx.Op("WarehouseController.Retrieve"), err))
 		return
 	}
 
 	warehouse, err := w.WarehouseUsecase.Retrieve(c.Request.Context(), warehouseID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -94,21 +90,18 @@ func (w *WarehouseController) Update(c *gin.Context) {
 	warehouseIDStr := c.Param("id")
 	warehouseID, err := uuid.Parse(warehouseIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid warehouse ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse ID", errx.Op("WarehouseController.Update"), err))
 		return
 	}
 
 	var body domain.WarehouseCreateRequest
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse payload", errx.Op("WarehouseController.Update"), err))
 		return
 	}
 
 	if err := w.WarehouseUsecase.Update(c.Request.Context(), warehouseID, body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -132,14 +125,12 @@ func (w *WarehouseController) Delete(c *gin.Context) {
 	warehouseIDStr := c.Param("id")
 	warehouseID, err := uuid.Parse(warehouseIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid warehouse ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse ID", errx.Op("WarehouseController.Delete"), err))
 		return
 	}
 
 	if err := w.WarehouseUsecase.Delete(c.Request.Context(), warehouseID); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -164,8 +155,7 @@ func (w *WarehouseController) SetActive(c *gin.Context) {
 	warehouseIDStr := c.Param("id")
 	warehouseID, err := uuid.Parse(warehouseIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid warehouse ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse ID", errx.Op("WarehouseController.SetActive"), err))
 		return
 	}
 
@@ -174,14 +164,12 @@ func (w *WarehouseController) SetActive(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid status payload", errx.Op("WarehouseController.SetActive"), err))
 		return
 	}
 
 	if err := w.WarehouseUsecase.SetActive(c.Request.Context(), warehouseID, req.IsActive); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -204,15 +192,13 @@ func (w *WarehouseController) GetByShop(c *gin.Context) {
 	shopIDStr := c.Param("shop_id")
 	shopID, err := uuid.Parse(shopIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid shop ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid shop ID", errx.Op("WarehouseController.GetByShop"), err))
 		return
 	}
 
 	warehouses, err := w.WarehouseUsecase.GetByShopID(c.Request.Context(), shopID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 

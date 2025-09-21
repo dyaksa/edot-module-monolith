@@ -35,7 +35,7 @@ func (pc *ProductController) Create(c *gin.Context) {
 	}
 
 	if err := pc.ProductUsecase.Create(c.Request.Context(), body); err != nil {
-		c.Error(errx.E(errx.CodeInternal, "failed to create product", errx.Op("ProductController.Create"), err))
+		c.Error(err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (pc *ProductController) RetrieveAll(c *gin.Context) {
 	result, err := pc.ProductUsecase.RetrieveAll(c.Request.Context(), pagination)
 
 	if err != nil {
-		c.Error(errx.E(errx.CodeInternal, "failed to retrieve products", errx.Op("ProductController.RetrieveAll"), err))
+		c.Error(err)
 		return
 	}
 

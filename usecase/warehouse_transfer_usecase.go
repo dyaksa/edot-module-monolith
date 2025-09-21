@@ -3,11 +3,11 @@ package usecase
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/dyaksa/warehouse/domain"
 	"github.com/dyaksa/warehouse/infrastructure/pqsql"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/google/uuid"
 )
 
@@ -23,38 +23,38 @@ type warehouseTransferUsecase struct {
 func (wtu *warehouseTransferUsecase) CreateTransfer(ctx context.Context, req domain.CreateTransferRequest) (*domain.WarehouseTransfer, error) {
 	fromWarehouseID, err := uuid.Parse(req.FromWarehouseID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid from_warehouse_id: %w", err)
+		return nil, errx.E(errx.CodeValidation, "invalid from_warehouse_id", errx.Op("warehouseTransferUsecase.CreateTransfer"), err)
 	}
 
 	toWarehouseID, err := uuid.Parse(req.ToWarehouseID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid to_warehouse_id: %w", err)
+		return nil, errx.E(errx.CodeValidation, "invalid to_warehouse_id", errx.Op("warehouseTransferUsecase.CreateTransfer"), err)
 	}
 
 	if fromWarehouseID == toWarehouseID {
-		return nil, errors.New("cannot transfer to the same warehouse")
+		return nil, errx.E(errx.CodeValidation, "cannot transfer to the same warehouse", errx.Op("warehouseTransferUsecase.CreateTransfer"), nil)
 	}
 
 	// Validate warehouses exist and are active
 	fromWarehouse, err := wtu.warehouseRepo.Retrieve(ctx, fromWarehouseID)
 	if err != nil {
-		return nil, fmt.Errorf("from warehouse not found: %w", err)
+		return nil, errx.E(errx.CodeNotFound, "from warehouse not found", errx.Op("warehouseTransferUsecase.CreateTransfer"), err)
 	}
 	if !fromWarehouse.IsActive {
-		return nil, errors.New("source warehouse is not active")
+		return nil, errx.E(errx.CodeValidation, "source warehouse is not active", errx.Op("warehouseTransferUsecase.CreateTransfer"), nil)
 	}
 
 	toWarehouse, err := wtu.warehouseRepo.Retrieve(ctx, toWarehouseID)
 	if err != nil {
-		return nil, fmt.Errorf("to warehouse not found: %w", err)
+		return nil, errx.E(errx.CodeNotFound, "to warehouse not found", errx.Op("warehouseTransferUsecase.CreateTransfer"), err)
 	}
 	if !toWarehouse.IsActive {
-		return nil, errors.New("destination warehouse is not active")
+		return nil, errx.E(errx.CodeValidation, "destination warehouse is not active", errx.Op("warehouseTransferUsecase.CreateTransfer"), nil)
 	}
 
 	// Validate warehouses belong to the same shop
 	if fromWarehouse.ShopID != toWarehouse.ShopID {
-		return nil, errors.New("warehouses must belong to the same shop")
+		return nil, errx.E(errx.CodeValidation, "warehouses must belong to the same shop", errx.Op("warehouseTransferUsecase.CreateTransfer"), nil)
 	}
 
 	var transfer *domain.WarehouseTransfer
@@ -99,7 +99,7 @@ func (wtu *warehouseTransferUsecase) CreateTransfer(ctx context.Context, req dom
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errx.E(errx.CodeInternal, "failed to create transfer", errx.Op("warehouseTransferUsecase.CreateTransfer"), err)
 	}
 
 	return transfer, nil
@@ -110,19 +110,19 @@ func (wtu *warehouseTransferUsecase) UpdateTransferStatus(ctx context.Context, t
 	// Get current transfer
 	transfer, err := wtu.transferRepo.GetByID(ctx, transferID)
 	if err != nil {
-		return err
+		return errx.E(errx.CodeNotFound, "transfer not found", errx.Op("warehouseTransferUsecase.UpdateTransferStatus"), err)
 	}
 
 	// Validate status transition
 	if !wtu.isValidStatusTransition(transfer.Status, req.Status) {
-		return fmt.Errorf("invalid status transition from %s to %s", transfer.Status, req.Status)
+		return errx.E(errx.CodeValidation, fmt.Sprintf("invalid status transition from %s to %s", transfer.Status, req.Status), errx.Op("warehouseTransferUsecase.UpdateTransferStatus"), nil)
 	}
 
 	// Execute the transfer if status is being set to IN_TRANSIT
 	if req.Status == domain.TransferStatusInTransit {
 		err = wtu.ExecuteTransfer(ctx, transferID)
 		if err != nil {
-			return err
+			return errx.E(errx.CodeInternal, "failed to execute transfer", errx.Op("warehouseTransferUsecase.UpdateTransferStatus"), err)
 		}
 		return nil // ExecuteTransfer updates status internally
 	}
@@ -132,7 +132,11 @@ func (wtu *warehouseTransferUsecase) UpdateTransferStatus(ctx context.Context, t
 		return nil, wtu.transferRepo.UpdateStatus(ctx, tx, transferID, req.Status)
 	})
 
-	return err
+	if err != nil {
+		return errx.E(errx.CodeInternal, "failed to update transfer status", errx.Op("warehouseTransferUsecase.UpdateTransferStatus"), err)
+	}
+
+	return nil
 }
 
 // GetTransfer implements domain.WarehouseTransferUsecase.
