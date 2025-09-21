@@ -1,0 +1,42 @@
+## Mockery v3 configuration
+## Notes:
+## - v3.2.5 removed/does not accept some v2 root keys (version, quiet, output, etc.)
+## - The keys rejected in your errors (with-expecter, mockname, outpkg) are not valid under 'config' for this build.
+## - We'll rely on defaults: mock struct will be named after interface prefixed with 'Mock', package will inherit dir name (mocks).
+## - If you need expecter support, invoke via CLI flag instead: `mockery --with-expecter` (cannot stay in YAML for this version).
+packages:
+  github.com/dyaksa/warehouse/infrastructure/pqsql:
+    config:
+      dir: ./mocks/pqsql
+      filename: "{{ .InterfaceName | snakecase }}_mock.go"
+    interfaces:
+      Database: {}
+      Client: {}
+  github.com/dyaksa/warehouse/infrastructure/crypto:
+    config:
+      dir: ./mocks/crypto
+      filename: "{{ .InterfaceName | snakecase }}_mock.go"
+    interfaces:
+      Crypto: {}
+  github.com/dyaksa/warehouse/domain:
+    config:
+      # Where generated mocks go (relative to repo root)
+      dir: ./mocks/repository
+      # File naming pattern; default is mock_<interface>.go but we keep custom snake_case name.
+      filename: "{{ .InterfaceName | snakecase }}_mock.go"
+    interfaces:
+      UserRepository: {}
+      ProductRepository: {}
+      ProductStockRepository: {}
+      ShopRepository: {}
+      OrderRepository: {}
+      OrderItemRepository: {}
+      ReservationRepository: {}
+      MovementRepository: {}
+      WarehouseRepository: {}
+      WarehouseTransferRepository: {}
+      IdempotencyRequestRepository: {}
+# Usage examples:
+#   Generate all (per YAML):   mockery
+#   Force expecter structs:    mockery --with-expecter
+#   Single interface:          mockery --name UserRepository --dir=./domain --output=./mocks --filename=user_repository_mock.go

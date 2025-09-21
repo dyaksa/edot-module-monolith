@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:latest
+    container_name: warehouse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-warehouse}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-warehouse}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - warehouse-network
+
+  # Main application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: warehouse-api
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      - GOOSE_DRIVER=postgres
+      - GOOSE_DBSTRING=postgres://${DB_USER:-postgres}:${DB_PASS:-postgres}@${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-warehouse}?sslmode=${DB_SSL:-disable}
+      - GODEBUG=madvdontneed=1
+      - GOOSE_MIGRATION_DIR=/migrations
+      - GOOSE_TABLE=goose_db_version
+
+      # Application config
+      - APP_NAME=${APP_NAME:-warehouse-api}
+      - APP_ENV=${APP_ENV:-production}
+      - APP_PORT=8080
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+      # Database config
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-postgres}
+      - DB_NAME=${DB_NAME:-warehouse}
+      - DB_SSL=disable
+
+      # JWT config
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - JWT_EXPIRY=${JWT_EXPIRY:-3600}
+
+      # Context timeout
+      - CONTEXT_TIMEOUT=${CONTEXT_TIMEOUT:-10}
+
+      - AUTO_MIGRATE=${AUTO_MIGRATE:-true}
+      - DB_DIALECT=${DB_DIALECT:-postgres}
+
+      - CRYPTO_AES_KEY=${CRYPTO_AES_KEY:-"IPHvIBy9e4BMeONOO9cnEaBLmhrozvS4"}
+      - CRYPTO_HMAC_KEY=${CRYPTO_HMAC_KEY:-"465avof850opG9skDLizC2EVd1mL7aF7"}
+      - CRYPTO_HEAP_DB_HOST=${CRYPTO_HEAP_DB_HOST:-"localhost"}
+      - CRYPTO_HEAP_DB_PORT=${CRYPTO_HEAP_DB_PORT:-"5432"}
+      - CRYPTO_HEAP_DB_USER=${CRYPTO_HEAP_DB_USER:-"postgres"}
+      - CRYPTO_HEAP_DB_PASS=${CRYPTO_HEAP_DB_PASS:-"password"}
+      - CRYPTO_HEAP_DB_NAME=${CRYPTO_HEAP_DB_NAME:-"crypto_heap"}
+      - CRYPTO_HEAP_DB_SSL=${CRYPTO_HEAP_DB_SSL:-"disable"}
+    depends_on:
+      - postgres
+    networks:
+      - warehouse-network
+    volumes:
+      - ./logs:/logs
+
+networks:
+  warehouse-network:
+    driver: bridge
+    name: warehouse-network
+
+volumes:
+  postgres_data:
+    driver: local

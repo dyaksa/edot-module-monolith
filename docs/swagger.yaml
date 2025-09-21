@@ -1,0 +1,747 @@
+basePath: /api
+definitions:
+  domain.AuthLoginRequest:
+    properties:
+      identifier:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 8
+        type: string
+    required:
+    - identifier
+    - password
+    type: object
+  domain.AuthRegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 8
+        type: string
+      phone:
+        example: "+6281234567890"
+        type: string
+    required:
+    - email
+    - password
+    - phone
+    type: object
+  domain.CreateProductRequest:
+    properties:
+      name:
+        example: Sample Product
+        type: string
+      on_hand:
+        example: 100
+        type: integer
+      sku:
+        example: PROD-001
+        type: string
+      warehouse_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - name
+    - sku
+    - warehouse_id
+    type: object
+  domain.CreateTransferItemRequest:
+    properties:
+      product_id:
+        example: 550e8400-e29b-41d4-a716-446655440004
+        type: string
+      qty:
+        example: 10
+        minimum: 1
+        type: integer
+    required:
+    - product_id
+    - qty
+    type: object
+  domain.CreateTransferRequest:
+    properties:
+      from_warehouse_id:
+        example: 550e8400-e29b-41d4-a716-446655440001
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/domain.CreateTransferItemRequest'
+        type: array
+      to_warehouse_id:
+        example: 550e8400-e29b-41d4-a716-446655440002
+        type: string
+    required:
+    - from_warehouse_id
+    - items
+    - to_warehouse_id
+    type: object
+  domain.TransferStatus:
+    enum:
+    - REQUESTED
+    - APPROVED
+    - IN_TRANSIT
+    - COMPLETED
+    - CANCELLED
+    type: string
+    x-enum-varnames:
+    - TransferStatusRequested
+    - TransferStatusApproved
+    - TransferStatusInTransit
+    - TransferStatusCompleted
+    - TransferStatusCancelled
+  domain.UpdateTransferStatusRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/domain.TransferStatus'
+        example: APPROVED
+    required:
+    - status
+    type: object
+  domain.WarehouseCreateRequest:
+    properties:
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: Main Warehouse
+        type: string
+      shop_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - name
+    - shop_id
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a comprehensive warehouse management system API for handling
+    products, orders, warehouses, and transfers.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Warehouse Management API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email/phone and password, returns JWT access
+        token
+      parameters:
+      - description: User login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AuthLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful with access token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to login
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with email, phone, and password
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.AuthRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload or validation failed
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to register user
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - Authentication
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all products with pagination support and warehouse information
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Products retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all products
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product with SKU, name, and initial stock quantity
+        in a warehouse
+      parameters:
+      - description: Product creation data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Product created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload or validation failed
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new product
+      tags:
+      - Products
+  /shops/{shop_id}/warehouses:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all warehouses associated with a specific shop
+      parameters:
+      - description: Shop ID (UUID)
+        format: uuid
+        in: path
+        name: shop_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouses retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid shop ID format
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get warehouses by shop ID
+      tags:
+      - Warehouses
+  /transfers:
+    post:
+      consumes:
+      - application/json
+      description: Create a transfer request to move products between warehouses with
+        specified items and quantities
+      parameters:
+      - description: Transfer creation data with items
+        in: body
+        name: transfer
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateTransferRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Transfer created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload or validation failed
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new warehouse transfer
+      tags:
+      - Warehouse Transfers
+  /transfers/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific warehouse transfer with all its details and
+        items
+      parameters:
+      - description: Transfer ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transfer retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid transfer ID format
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Transfer not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get warehouse transfer by ID
+      tags:
+      - Warehouse Transfers
+  /transfers/{id}/execute:
+    post:
+      consumes:
+      - application/json
+      description: Execute an approved transfer to actually move stock between warehouses
+      parameters:
+      - description: Transfer ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transfer executed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid transfer ID or transfer not in executable state
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Transfer not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error or execution failed
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Execute warehouse transfer
+      tags:
+      - Warehouse Transfers
+  /transfers/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a warehouse transfer (REQUESTED, APPROVED,
+        IN_TRANSIT, COMPLETED, CANCELLED)
+      parameters:
+      - description: Transfer ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New transfer status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateTransferStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transfer status updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid transfer ID or status
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Transfer not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update transfer status
+      tags:
+      - Warehouse Transfers
+  /warehouses:
+    post:
+      consumes:
+      - application/json
+      description: Create a new warehouse associated with a shop
+      parameters:
+      - description: Warehouse creation data
+        in: body
+        name: warehouse
+        required: true
+        schema:
+          $ref: '#/definitions/domain.WarehouseCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Warehouse created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request payload or validation failed
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new warehouse
+      tags:
+      - Warehouses
+  /warehouses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing warehouse by its UUID
+      parameters:
+      - description: Warehouse ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouse deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid warehouse ID format
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Warehouse not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete warehouse
+      tags:
+      - Warehouses
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific warehouse by its UUID
+      parameters:
+      - description: Warehouse ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouse retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid warehouse ID format
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Warehouse not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get warehouse by ID
+      tags:
+      - Warehouses
+    put:
+      consumes:
+      - application/json
+      description: Update an existing warehouse by its UUID
+      parameters:
+      - description: Warehouse ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated warehouse data
+        in: body
+        name: warehouse
+        required: true
+        schema:
+          $ref: '#/definitions/domain.WarehouseCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouse updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid warehouse ID or request payload
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Warehouse not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update warehouse
+      tags:
+      - Warehouses
+  /warehouses/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Enable or disable a warehouse by updating its active status
+      parameters:
+      - description: Warehouse ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Active status data
+        in: body
+        name: status
+        required: true
+        schema:
+          properties:
+            is_active:
+              type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Warehouse status updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid warehouse ID or request payload
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Warehouse not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Set warehouse active status
+      tags:
+      - Warehouses
+  /warehouses/{warehouse_id}/transfers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all transfers where the warehouse is either source or
+        destination with pagination
+      parameters:
+      - description: Warehouse ID (UUID)
+        format: uuid
+        in: path
+        name: warehouse_id
+        required: true
+        type: string
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transfers retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid warehouse ID or pagination parameters
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get transfers by warehouse
+      tags:
+      - Warehouse Transfers
+produces:
+- application/json
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

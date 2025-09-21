@@ -1,0 +1,74 @@
+# Version control
+.git
+.gitignore
+
+# Documentation
+README.md
+DOCKER.md
+*.md
+
+# Development files
+.env
+.env.local
+.env.example
+.vscode/
+.idea/
+
+# Build artifacts
+bin/
+tmp/
+build/
+dist/
+
+# Logs
+*.log
+logs/
+
+# Test files
+coverage.out
+coverage.html
+*_test.go
+testdata/
+
+# Docker files (to avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies (will be downloaded in container)
+vendor/
+
+# Air config (development only)
+.air.toml
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE files
+*.code-workspace
+
+# CI/CD
+.github/
+
+# Scripts
+scripts/
+
+# Mocks (generated during build if needed)
+mocks/
+
+# Docker compose files
+docker/
+
+# Node modules (if any)
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
