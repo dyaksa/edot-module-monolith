@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dyaksa/warehouse/domain"
-	"github.com/dyaksa/warehouse/pkg/response/response_error"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/response/response_success"
 	"github.com/gin-gonic/gin"
 )
@@ -17,14 +17,12 @@ func (sc *ShopController) Create(c *gin.Context) {
 	var body domain.CreateShopRequest
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid shop payload", errx.Op("ShopController.Create"), err))
 		return
 	}
 
 	if err := sc.ShopUsecase.Create(c.Request.Context(), body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -34,15 +32,13 @@ func (sc *ShopController) Create(c *gin.Context) {
 func (sc *ShopController) Retrieve(c *gin.Context) {
 	var query domain.ShopQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid shop query", errx.Op("ShopController.Retrieve"), err))
 		return
 	}
 
 	shop, err := sc.ShopUsecase.Retrieve(c.Request.Context(), query.ID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -52,14 +48,12 @@ func (sc *ShopController) Retrieve(c *gin.Context) {
 func (sc *ShopController) Update(c *gin.Context) {
 	var body domain.UpdateShopRequest
 	if err := c.ShouldBind(&body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid shop payload", errx.Op("ShopController.Update"), err))
 		return
 	}
 
 	if err := sc.ShopUsecase.Update(c.Request.Context(), body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -69,14 +63,12 @@ func (sc *ShopController) Update(c *gin.Context) {
 func (sc *ShopController) Delete(c *gin.Context) {
 	var query domain.ShopQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid shop query", errx.Op("ShopController.Delete"), err))
 		return
 	}
 
 	if err := sc.ShopUsecase.Delete(c.Request.Context(), query.ID); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 

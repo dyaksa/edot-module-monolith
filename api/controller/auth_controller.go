@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dyaksa/warehouse/domain"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/response/response_success"
 	"github.com/gin-gonic/gin"
 )
@@ -27,13 +28,13 @@ func (ac *AuthController) Register(c *gin.Context) {
 	var payload domain.AuthRegisterRequest
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		response_success.JSON(c).Msg("Invalid request payload").Status("error").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid request payload", errx.Op("AuthController.Register"), err))
 		return
 	}
 
 	_, err := ac.AuthUsecase.Register(c.Request.Context(), payload)
 	if err != nil {
-		response_success.JSON(c).Msg("Failed to register user").Status("error").Send(http.StatusInternalServerError)
+		c.Error(err)
 		return
 	}
 
@@ -56,13 +57,13 @@ func (ac *AuthController) Login(c *gin.Context) {
 	var payload domain.AuthLoginRequest
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		response_success.JSON(c).Msg("Invalid request payload").Status("error").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid request payload", errx.Op("AuthController.Login"), err))
 		return
 	}
 
 	token, err := ac.AuthUsecase.Login(c.Request.Context(), payload)
 	if err != nil {
-		response_success.JSON(c).Msg("Failed to login").Status("error").Send(http.StatusInternalServerError)
+		c.Error(err)
 		return
 	}
 

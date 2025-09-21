@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/dyaksa/warehouse/domain"
-	"github.com/dyaksa/warehouse/pkg/response/response_error"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/response/response_success"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,15 +31,13 @@ func (wtc *WarehouseTransferController) CreateTransfer(c *gin.Context) {
 	var req domain.CreateTransferRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid transfer payload", errx.Op("WarehouseTransferController.CreateTransfer"), err))
 		return
 	}
 
 	transfer, err := wtc.TransferUsecase.CreateTransfer(c.Request.Context(), req)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -63,15 +61,13 @@ func (wtc *WarehouseTransferController) GetTransfer(c *gin.Context) {
 	transferIDStr := c.Param("id")
 	transferID, err := uuid.Parse(transferIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid transfer ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid transfer ID", errx.Op("WarehouseTransferController.GetTransfer"), err))
 		return
 	}
 
 	transfer, err := wtc.TransferUsecase.GetTransfer(c.Request.Context(), transferID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -96,22 +92,20 @@ func (wtc *WarehouseTransferController) UpdateTransferStatus(c *gin.Context) {
 	transferIDStr := c.Param("id")
 	transferID, err := uuid.Parse(transferIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid transfer ID").Status("error validation").Send(http.StatusBadRequest)
+		c.Error(errx.E(errx.CodeValidation, "invalid transfer ID", errx.Op("WarehouseTransferController.UpdateTransferStatus"), err))
 		c.Abort()
 		return
 	}
 
 	var req domain.UpdateTransferStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid status payload", errx.Op("WarehouseTransferController.UpdateTransferStatus"), err))
 		return
 	}
 
 	err = wtc.TransferUsecase.UpdateTransferStatus(c.Request.Context(), transferID, req)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -136,8 +130,7 @@ func (wtc *WarehouseTransferController) GetTransfersByWarehouse(c *gin.Context) 
 	warehouseIDStr := c.Param("warehouse_id")
 	warehouseID, err := uuid.Parse(warehouseIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid warehouse ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid warehouse ID", errx.Op("WarehouseTransferController.GetTransfersByWarehouse"), err))
 		return
 	}
 
@@ -157,8 +150,7 @@ func (wtc *WarehouseTransferController) GetTransfersByWarehouse(c *gin.Context) 
 
 	transfers, total, err := wtc.TransferUsecase.GetTransfersByWarehouse(c.Request.Context(), warehouseID, limit, offset)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -189,15 +181,13 @@ func (wtc *WarehouseTransferController) ExecuteTransfer(c *gin.Context) {
 	transferIDStr := c.Param("id")
 	transferID, err := uuid.Parse(transferIDStr)
 	if err != nil {
-		response_error.JSON(c).Msg("invalid transfer ID").Status("error validation").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid transfer ID", errx.Op("WarehouseTransferController.ExecuteTransfer"), err))
 		return
 	}
 
 	err = wtc.TransferUsecase.ExecuteTransfer(c.Request.Context(), transferID)
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusInternalServerError)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 

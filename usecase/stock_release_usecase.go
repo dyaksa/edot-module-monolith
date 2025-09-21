@@ -7,6 +7,7 @@ import (
 
 	"github.com/dyaksa/warehouse/domain"
 	"github.com/dyaksa/warehouse/infrastructure/pqsql"
+	"github.com/dyaksa/warehouse/pkg/errx"
 )
 
 type StockReleaseUsecase interface {
@@ -28,7 +29,7 @@ func (s *stockReleaseUsecase) ProcessExpiredReservations(ctx context.Context, ba
 		// Pick expired reservations for update
 		expiredReservations, err := s.reservationRepo.PickExpiredForUpdate(ctx, tx, batchSize)
 		if err != nil {
-			return nil, err
+			return nil, errx.E(errx.CodeInternal, "failed to pick expired reservations", errx.Op("stockReleaseUsecase.ProcessExpiredReservations"), err)
 		}
 
 		log.Printf("Found %d expired reservations to process", len(expiredReservations))
@@ -37,13 +38,13 @@ func (s *stockReleaseUsecase) ProcessExpiredReservations(ctx context.Context, ba
 			// Release stock for each expired reservation
 			if err := s.releaseStockForReservation(ctx, tx, reservation); err != nil {
 				log.Printf("Error releasing stock for reservation %s: %v", reservation.ID, err)
-				return nil, err
+				return nil, errx.E(errx.CodeInternal, "failed to release stock for reservation", errx.Op("stockReleaseUsecase.ProcessExpiredReservations"), err)
 			}
 
 			// Mark reservation as expired
 			if err := s.reservationRepo.MarkExpired(ctx, tx, reservation.ID); err != nil {
 				log.Printf("Error marking reservation %s as expired: %v", reservation.ID, err)
-				return nil, err
+				return nil, errx.E(errx.CodeInternal, "failed to mark reservation as expired", errx.Op("stockReleaseUsecase.ProcessExpiredReservations"), err)
 			}
 
 			log.Printf("Successfully released stock and marked reservation %s as expired", reservation.ID)
@@ -51,7 +52,7 @@ func (s *stockReleaseUsecase) ProcessExpiredReservations(ctx context.Context, ba
 
 		// Check if all reservations for orders are expired and update order status
 		if err := s.updateOrderStatusIfAllReservationsExpired(ctx, tx, expiredReservations); err != nil {
-			return nil, err
+			return nil, errx.E(errx.CodeInternal, "failed to update order statuses", errx.Op("stockReleaseUsecase.ProcessExpiredReservations"), err)
 		}
 
 		return nil, nil
@@ -63,7 +64,11 @@ func (s *stockReleaseUsecase) ProcessExpiredReservations(ctx context.Context, ba
 // ReleaseReservationStock implements StockReleaseUsecase.
 func (s *stockReleaseUsecase) ReleaseReservationStock(ctx context.Context, reservation domain.Reservation) error {
 	_, err := s.db.Transaction(ctx, func(ctx context.Context, tx *sql.Tx) (any, error) {
-		return nil, s.releaseStockForReservation(ctx, tx, reservation)
+		if err := s.releaseStockForReservation(ctx, tx, reservation); err != nil {
+			return nil, errx.E(errx.CodeInternal, "failed to release stock for reservation", errx.Op("stockReleaseUsecase.ReleaseReservationStock"), err)
+		}
+
+		return nil, nil
 	})
 	return err
 }

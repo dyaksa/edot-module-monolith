@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/dyaksa/warehouse/domain"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/google/uuid"
 )
 
@@ -18,7 +19,7 @@ func (s *shopUsecase) Create(ctx context.Context, payload domain.CreateShopReque
 	}
 
 	if _, err := s.shopRepository.Create(ctx, shop); err != nil {
-		return err
+		return errx.E(errx.CodeInternal, "failed to create shop", errx.Op("shopUsecase.Create"), err)
 	}
 
 	return nil
@@ -27,7 +28,7 @@ func (s *shopUsecase) Create(ctx context.Context, payload domain.CreateShopReque
 // Delete implements domain.ShopUsecase.
 func (s *shopUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 	if err := s.shopRepository.Delete(ctx, id); err != nil {
-		return err
+		return errx.E(errx.CodeInternal, "failed to delete shop", errx.Op("shopUsecase.Delete"), err)
 	}
 
 	return nil
@@ -37,7 +38,7 @@ func (s *shopUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 func (s *shopUsecase) Retrieve(ctx context.Context, id uuid.UUID) (*domain.Shop, error) {
 	shop, err := s.shopRepository.Retrieve(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, errx.E(errx.CodeInternal, "failed to retrieve shop", errx.Op("shopUsecase.Retrieve"), err)
 	}
 
 	return shop, nil
@@ -51,7 +52,7 @@ func (s *shopUsecase) Update(ctx context.Context, payload domain.UpdateShopReque
 	}
 
 	if err := s.shopRepository.Update(ctx, shop); err != nil {
-		return err
+		return errx.E(errx.CodeInternal, "failed to update shop", errx.Op("shopUsecase.Update"), err)
 	}
 
 	return nil

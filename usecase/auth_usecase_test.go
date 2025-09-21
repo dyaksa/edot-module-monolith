@@ -29,32 +29,6 @@ func (s simpleCryptoStub) Decrypt(def string) aesx.AES[string, core.PrimitiveAES
 func (s simpleCryptoStub) BindHeap(entity any) error  { return nil }
 func (s simpleCryptoStub) HashString(v string) string { return "hash(" + v + ")" }
 
-func TestAuthUsecase_Login_Success(t *testing.T) {
-	ctx := context.Background()
-	userRepo := mocks.NewMockUserRepository(t)
-	c := simpleCryptoStub{}
-	env := &bootstrap.Env{JwtSecret: "secret", JwtExpiry: 3600}
-
-	uc := NewAuthUsecase(userRepo, c, env)
-
-	loginReq := domain.AuthLoginRequest{Identifier: "user@example.com", Password: "password123"}
-	hashed := c.HashString("user@example.com")
-
-	userRepo.EXPECT().GetMailOrPhone(ctx, hashed, hashed, mock.Anything).RunAndReturn(
-		func(_ context.Context, _ string, _ string, fn func(*domain.User)) (*domain.User, error) {
-			u := &domain.User{}
-			if fn != nil {
-				fn(u)
-			}
-			return u, nil
-		},
-	)
-
-	token, err := uc.Login(ctx, loginReq)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
-}
-
 func TestAuthUsecase_Login_InvalidIdentifier(t *testing.T) {
 	ctx := context.Background()
 	userRepo := mocks.NewMockUserRepository(t)

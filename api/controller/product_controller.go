@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/dyaksa/warehouse/domain"
+	"github.com/dyaksa/warehouse/pkg/errx"
 	"github.com/dyaksa/warehouse/pkg/paginator"
-	"github.com/dyaksa/warehouse/pkg/response/response_error"
 	"github.com/dyaksa/warehouse/pkg/response/response_success"
 	"github.com/gin-gonic/gin"
 )
@@ -30,14 +30,12 @@ func (pc *ProductController) Create(c *gin.Context) {
 	var body domain.CreateProductRequest
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("validation failed").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid product payload", errx.Op("ProductController.Create"), err))
 		return
 	}
 
 	if err := pc.ProductUsecase.Create(c.Request.Context(), body); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
@@ -62,16 +60,14 @@ func (pc *ProductController) RetrieveAll(c *gin.Context) {
 	var pagination paginator.PaginationRequest
 
 	if err := c.ShouldBindQuery(&pagination); err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("validation failed").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(errx.E(errx.CodeValidation, "invalid pagination query", errx.Op("ProductController.RetrieveAll"), err))
 		return
 	}
 
 	result, err := pc.ProductUsecase.RetrieveAll(c.Request.Context(), pagination)
 
 	if err != nil {
-		response_error.JSON(c).Msg(err.Error()).Status("internal server error").Send(http.StatusBadRequest)
-		c.Abort()
+		c.Error(err)
 		return
 	}
 
