@@ -30,6 +30,10 @@ func (a *authUsecase) Login(ctx context.Context, payload domain.AuthLoginRequest
 		data.Phone = a.crypto.Decrypt("")
 	})
 
+	if ok := passwordutils.VerifyPassword(payload.Password, existsUser.PasswordHash); !ok {
+		return "", errors.New("invalid credentials")
+	}
+
 	if err != nil {
 		return "", err
 	}

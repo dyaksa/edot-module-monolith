@@ -21,9 +21,9 @@ func (ur *useRepository) GetMailOrPhone(ctx context.Context, email_bidx string, 
 		fn(&user)
 	}
 
-	query := `SELECT id, email, phone FROM users WHERE email_bidx = $1 OR phone_bidx = $2 LIMIT 1`
+	query := `SELECT id, email, phone, password_hash FROM users WHERE email_bidx = $1 OR phone_bidx = $2 LIMIT 1`
 	err := ur.database.Database().QueryRowContext(ctx, query, email_bidx, phone_bidx).Scan(
-		&user.ID, &user.Email, &user.Phone,
+		&user.ID, &user.Email, &user.Phone, &user.PasswordHash,
 	)
 
 	switch {
