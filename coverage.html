@@ -195,7 +195,7 @@
 				
 				<option value="file69">github.com/dyaksa/warehouse/repository/warehouse_transfer_repository.go (0.0%)</option>
 				
-				<option value="file70">github.com/dyaksa/warehouse/usecase/auth_usecase.go (65.5%)</option>
+				<option value="file70">github.com/dyaksa/warehouse/usecase/auth_usecase.go (51.6%)</option>
 				
 				<option value="file71">github.com/dyaksa/warehouse/usecase/order_usecase.go (43.0%)</option>
 				
@@ -9493,12 +9493,16 @@ func (a *authUsecase) Login(ctx context.Context, payload domain.AuthLoginRequest
                 return "", errx.E(errx.CodeValidation, "invalid identifier", errx.Op("authUsecase.Login"))
         }</span>
 
-        <span class="cov8" title="1">existsUser, err := a.userRepo.GetMailOrPhone(ctx, a.crypto.HashString(norm), a.crypto.HashString(norm), func(data *domain.User) </span><span class="cov0" title="0">{
+        <span class="cov0" title="0">existsUser, err := a.userRepo.GetMailOrPhone(ctx, a.crypto.HashString(norm), a.crypto.HashString(norm), func(data *domain.User) </span><span class="cov0" title="0">{
                 data.Email = a.crypto.Decrypt("")
                 data.Phone = a.crypto.Decrypt("")
         }</span>)
 
-        <span class="cov8" title="1">if err != nil </span><span class="cov8" title="1">{
+        <span class="cov0" title="0">if ok := passwordutils.VerifyPassword(payload.Password, existsUser.PasswordHash); !ok </span><span class="cov0" title="0">{
+                return "", errors.New("invalid credentials")
+        }</span>
+
+        <span class="cov0" title="0">if err != nil </span><span class="cov0" title="0">{
                 return "", errx.E(errx.CodeNotFound, "user not found", errx.Op("authUsecase.Login"), err)
         }</span>
 

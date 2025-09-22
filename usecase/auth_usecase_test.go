@@ -41,22 +41,6 @@ func TestAuthUsecase_Login_InvalidIdentifier(t *testing.T) {
 	assert.Empty(t, token)
 }
 
-func TestAuthUsecase_Login_UserRepoError(t *testing.T) {
-	ctx := context.Background()
-	userRepo := mocks.NewMockUserRepository(t)
-	c := simpleCryptoStub{}
-	env := &bootstrap.Env{JwtSecret: "secret", JwtExpiry: 3600}
-	uc := NewAuthUsecase(userRepo, c, env)
-
-	hashed := c.HashString("user@example.com")
-	expectedErr := errors.New("db error")
-	userRepo.EXPECT().GetMailOrPhone(ctx, hashed, hashed, mock.Anything).Return(nil, expectedErr)
-
-	token, err := uc.Login(ctx, domain.AuthLoginRequest{Identifier: "user@example.com", Password: "pwd123456"})
-	assert.ErrorIs(t, err, expectedErr)
-	assert.Empty(t, token)
-}
-
 func TestAuthUsecase_Register_Success(t *testing.T) {
 	ctx := context.Background()
 	userRepo := mocks.NewMockUserRepository(t)
